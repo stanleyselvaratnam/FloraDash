@@ -1,0 +1,4 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "DMP1045U") (type "KiCad") (uri "${KIPRJMOD}/footprints/DMP1045U/DMP1045U.kicad_sym") (options "") (descr ""))
+)
