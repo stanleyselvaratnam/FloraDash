@@ -1,0 +1,5 @@
+# Ignorer tous les fichiers de verrouillage
+*.lck
+
+# Ignorer le dossier de sauvegardes et tout son contenu
+FLORADASH-PCB-backups/
