@@ -53,7 +53,13 @@
           "min_clearance": 0.5
         }
       },
-      "diff_pair_dimensions": [],
+      "diff_pair_dimensions": [
+        {
+          "gap": 0.0,
+          "via_gap": 0.0,
+          "width": 0.0
+        }
+      ],
       "drc_exclusions": [],
       "meta": {
         "version": 2
@@ -187,7 +193,10 @@
           "td_width_to_size_filter_ratio": 0.9
         }
       ],
-      "track_widths": [],
+      "track_widths": [
+        0.0,
+        0.5
+      ],
       "tuning_pattern_settings": {
         "diff_pair_defaults": {
           "corner_radius_percentage": 80,
@@ -214,7 +223,16 @@
           "spacing": 0.6
         }
       },
-      "via_dimensions": [],
+      "via_dimensions": [
+        {
+          "diameter": 0.0,
+          "drill": 0.0
+        },
+        {
+          "diameter": 0.9,
+          "drill": 0.6
+        }
+      ],
       "zones_allow_external_fillets": false
     },
     "ipc2581": {
@@ -244,7 +262,20 @@
     "equivalence_files": []
   },
   "erc": {
-    "erc_exclusions": [],
+    "erc_exclusions": [
+      [
+        "pin_not_connected|533400|863600|2b3c65d1-621b-43e4-be7d-8a9ffee8bc56|00000000-0000-0000-0000-000000000000|/cead742e-00ff-4eab-9d80-942a293a1b5f|/cead742e-00ff-4eab-9d80-942a293a1b5f|",
+        ""
+      ],
+      [
+        "pin_not_connected|558800|863600|dd062924-90d8-4430-8b76-c11964a400dd|00000000-0000-0000-0000-000000000000|/cead742e-00ff-4eab-9d80-942a293a1b5f|/cead742e-00ff-4eab-9d80-942a293a1b5f|",
+        ""
+      ],
+      [
+        "pin_not_connected|584200|863600|2ef3b69d-0e3e-4076-82ad-fb4bc2b67ab2|00000000-0000-0000-0000-000000000000|/cead742e-00ff-4eab-9d80-942a293a1b5f|/cead742e-00ff-4eab-9d80-942a293a1b5f|",
+        ""
+      ]
+    ],
     "meta": {
       "version": 0
     },
@@ -430,8 +461,8 @@
       "endpoint_off_grid": "warning",
       "extra_units": "error",
       "field_name_whitespace": "warning",
-      "footprint_filter": "ignore",
-      "footprint_link_issues": "warning",
+      "footprint_filter": "error",
+      "footprint_link_issues": "ignore",
       "four_way_junction": "ignore",
       "ground_pin_not_ground": "warning",
       "hier_label_mismatch": "error",
@@ -451,7 +482,7 @@
       "pin_not_connected": "error",
       "pin_not_driven": "error",
       "pin_to_pin": "warning",
-      "power_pin_not_driven": "error",
+      "power_pin_not_driven": "ignore",
       "same_local_global_label": "warning",
       "similar_label_and_power": "warning",
       "similar_labels": "warning",
@@ -495,6 +526,14 @@
         "via_diameter": 0.6,
         "via_drill": 0.3,
         "wire_width": 6
+      },
+      {
+        "name": "Power",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 0,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 1.0,
+        "tuning_profile": ""
       }
     ],
     "meta": {
@@ -502,7 +541,24 @@
     },
     "net_colors": null,
     "netclass_assignments": null,
-    "netclass_patterns": []
+    "netclass_patterns": [
+      {
+        "netclass": "Power",
+        "pattern": "+3.3V"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "+5V"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "+5V_FILT"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "GND"
+      }
+    ]
   },
   "pcbnew": {
     "last_paths": {
@@ -518,7 +574,7 @@
     "annotate_start_num": 0,
     "annotation": {
       "method": 0,
-      "sort_order": 0
+      "sort_order": 1
     },
     "bom_export_filename": "${PROJECTNAME}.csv",
     "bom_fmt_presets": [],
@@ -758,7 +814,7 @@
         "uuid": "cead742e-00ff-4eab-9d80-942a293a1b5f"
       }
     ],
-    "used_designators": "C19-20,R20-21,#PWR54-60,J3,U3,U9",
+    "used_designators": "",
     "variants": []
   },
   "sheets": [
