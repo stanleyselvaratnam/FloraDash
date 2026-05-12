@@ -18461,7 +18461,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "66f65e3f-eca8-4851-bd8d-4ba877ed9f70")
-		(property "Reference" "H3"
+		(property "Reference" "H2"
 			(at 191.77 162.56 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18586,7 +18586,7 @@
 		(instances
 			(project "FLORADASH-PCB"
 				(path "/cead742e-00ff-4eab-9d80-942a293a1b5f"
-					(reference "H3")
+					(reference "H2")
 					(unit 1)
 				)
 			)
@@ -20155,7 +20155,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "86e2b07c-9ffa-4f93-86e3-fc4691836586")
-		(property "Reference" "H4"
+		(property "Reference" "H3"
 			(at 199.39 162.5599 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20280,7 +20280,7 @@
 		(instances
 			(project "FLORADASH-PCB"
 				(path "/cead742e-00ff-4eab-9d80-942a293a1b5f"
-					(reference "H4")
+					(reference "H3")
 					(unit 1)
 				)
 			)
