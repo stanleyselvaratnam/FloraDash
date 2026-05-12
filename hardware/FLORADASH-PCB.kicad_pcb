@@ -5885,7 +5885,7 @@
 		(descr "Capacitor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf)")
 		(tags "capacitor")
 		(property "Reference" "C9"
-			(at 0 1.5 90)
+			(at -2.18 -0.02 180)
 			(layer "F.SilkS")
 			(uuid "204fd3e4-fbb4-4d41-adea-b85e69842d42")
 			(effects
@@ -16147,7 +16147,7 @@
 		(descr "SMD pad as test Point, diameter 1.0mm")
 		(tags "test point SMD pad")
 		(property "Reference" "TP5"
-			(at -1.75 -1.5 0)
+			(at -0.5 -1.5 0)
 			(layer "F.SilkS")
 			(uuid "33d63d18-b40e-401a-8c9a-6b329cec90e8")
 			(effects
@@ -16306,7 +16306,7 @@
 			(uuid "cd20716c-2be7-4e78-bd2e-d936585265c7")
 		)
 		(fp_text user "${REFERENCE}"
-			(at -1.75 -1.5 0)
+			(at -0.5 -1.5 0)
 			(layer "F.Fab")
 			(uuid "5551a361-7b9c-4f46-ad19-a607ef2561be")
 			(effects
@@ -26564,6 +26564,228 @@
 		)
 		(layer "Edge.Cuts")
 		(uuid "c6f32507-88f9-46df-9557-b6299de34fd4")
+	)
+	(gr_text "GND"
+		(at 132.75 90.25 0)
+		(layer "F.SilkS")
+		(uuid "c8c7c5f3-51a8-41f3-8b1b-44c2e20ebc87")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "TX"
+		(at 135.5 90.25 0)
+		(layer "F.SilkS")
+		(uuid "1752a699-6048-4db0-9b83-952da6413cae")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "RX"
+		(at 138 90.25 0)
+		(layer "F.SilkS")
+		(uuid "bb133dd0-c498-4f06-aace-927e75d956b8")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "3V3"
+		(at 140.5 90.25 0)
+		(layer "F.SilkS")
+		(uuid "d9ed9d8e-24f5-4906-8a48-c4138c23b603")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "GPIO5"
+		(at 149 89 0)
+		(layer "F.SilkS")
+		(uuid "89a1115c-0f3f-4272-9e88-ab5618dff452")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "3V3"
+		(at 149.25 96 0)
+		(layer "F.SilkS")
+		(uuid "7a95724b-9ce4-482d-a284-b84fb3a4451b")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "GPIO6"
+		(at 151.5 96 0)
+		(layer "F.SilkS")
+		(uuid "7ee1f34c-eff3-4c00-bdd8-babbb383a306")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "GND"
+		(at 151.75 89 0)
+		(layer "F.SilkS")
+		(uuid "0a210d87-1815-44f7-8d09-7a8fc5446608")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "GPIO7"
+		(at 154 96 0)
+		(layer "F.SilkS")
+		(uuid "0fc4ea59-5ac1-41de-b4a7-55970b0f4d4c")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "GPIO8"
+		(at 154.25 89 0)
+		(layer "F.SilkS")
+		(uuid "117bd4e9-a4a1-4d23-a74d-e96932b7163f")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "GPIO10"
+		(at 156.5 96 0)
+		(layer "F.SilkS")
+		(uuid "f79900a6-0270-4856-9131-088f923aab33")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "GND"
+		(at 157 89 0)
+		(layer "F.SilkS")
+		(uuid "3eb2f6eb-8b6b-42c5-a088-9b73308b583e")
+		(effects
+			(font
+				(size 0.5 0.5)
+				(thickness 0.0375)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "B+"
+		(at 109.25 102 0)
+		(layer "F.SilkS")
+		(uuid "8ad0b678-9cf5-4ac9-bfd6-f8a9fde6430a")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.25)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "3V3"
+		(at 147.75 106.25 0)
+		(layer "F.SilkS")
+		(uuid "ce32b11a-f582-4812-beb6-6c077208c5da")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.25)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "RESET"
+		(at 169.25 114.5 0)
+		(layer "F.SilkS")
+		(uuid "8331d4ab-eb81-4b59-b220-178d74315e19")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.25)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "BOOT"
+		(at 169.25 122 0)
+		(layer "F.SilkS")
+		(uuid "7fdea3f3-78e3-43e5-9ac5-1dbca7fc6450")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.25)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "B-"
+		(at 189.25 103.75 0)
+		(layer "F.SilkS")
+		(uuid "802f0885-58e5-4ae8-8913-e647ac5729ec")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.25)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "Charged"
+		(at 105.75 99.5 90)
+		(layer "F.SilkS")
+		(uuid "cfaaa8b4-80c9-43c8-a3d1-e87007bb6a94")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.25)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
 	)
 	(gr_text "Capacitive soil mosture"
 		(at 217.75 120 0)
