@@ -1,0 +1,27 @@
+** Drc report for FLORADASH-PCB.kicad_pcb **
+** Created on 2026-05-12T15:22:09 **
+** Report includes: Errors **
+
+** Found 2 DRC violations **
+[starved_thermal]: Connexion de frein thermique à la zone incomplète (couche F.Cu ; zone nbre min de rayons 2 ; réel 1)
+    Local override; error
+    @(104.0000 mm, 88.0000 mm): Zone 'GND' [GND] on F.Cu and B.Cu, priority 1
+    @(110.9800 mm, 117.4300 mm): Pad A12 [GND] of J1 on F.Cu
+[starved_thermal]: Connexion de frein thermique à la zone incomplète (couche F.Cu ; zone nbre min de rayons 2 ; réel 1)
+    Local override; error
+    @(104.0000 mm, 88.0000 mm): Zone 'GND' [GND] on F.Cu and B.Cu, priority 1
+    @(110.9800 mm, 117.4300 mm): Pad B1 [GND] of J1 on F.Cu
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** Ignored checks **
+    - Courtyards overlap
+    - Footprint has no courtyard defined
+    - Track endpoint not centered on via
+    - Tuning profile track geometries
+    - Footprint doesn't match symbol's footprint filters
+    - Footprint component type doesn't match footprint pads
+
+** End of Report **
