@@ -13311,10 +13311,10 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "1761ef51-6ff6-4296-a225-787830a9c96d")
 		(property "Reference" "TP5"
 			(at 276.098 23.368 0)
@@ -14150,10 +14150,10 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "29b39606-c939-4463-8e12-629238e675da")
 		(property "Reference" "TP1"
 			(at 53.086 20.574 0)
@@ -14595,10 +14595,10 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "30e167df-f717-4930-bf64-4971e1528791")
 		(property "Reference" "TP6"
 			(at 107.696 81.534 0)
@@ -17412,6 +17412,17 @@
 				)
 			)
 		)
+		(property "JLCPCB Part #" "C2886894"
+			(at 111.76 176.53 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "ef44effa-9c65-4f51-8b1f-512fa342a40b")
 		)
@@ -17569,7 +17580,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part #" ""
+		(property "JLCPCB Part #" "C22438144"
 			(at 222.25 120.65 0)
 			(hide yes)
 			(show_name no)
@@ -17821,6 +17832,17 @@
 			)
 		)
 		(property "Voltage" ""
+			(at 86.36 179.07 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB Part #" "C2886894"
 			(at 86.36 179.07 90)
 			(hide yes)
 			(show_name no)
@@ -18459,7 +18481,7 @@
 		(in_bom no)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "66f65e3f-eca8-4851-bd8d-4ba877ed9f70")
 		(property "Reference" "H2"
 			(at 191.77 162.56 0)
@@ -18598,10 +18620,10 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "6d6687fa-688f-4757-ba33-910a014325cf")
 		(property "Reference" "TP3"
 			(at 192.786 21.844 0)
@@ -19036,10 +19058,10 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "734f756a-0fd3-401a-9d3b-0e9bb386500d")
 		(property "Reference" "TP2"
 			(at 87.376 20.574 0)
@@ -19389,7 +19411,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part #" ""
+		(property "JLCPCB Part #" "C2718488"
 			(at 146.05 171.45 0)
 			(hide yes)
 			(show_name no)
@@ -19637,10 +19659,10 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "7e794a31-b5a0-4271-8e4f-393770fb9ede")
 		(property "Reference" "TP4"
 			(at 256.54 23.114 0)
@@ -20152,7 +20174,7 @@
 		(in_bom no)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "86e2b07c-9ffa-4f93-86e3-fc4691836586")
 		(property "Reference" "H3"
@@ -20295,7 +20317,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "88b11779-a45b-46eb-9ec7-52552c55e0c3")
 		(property "Reference" "BT1"
@@ -21462,7 +21484,7 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
@@ -21643,7 +21665,7 @@
 				(justify bottom)
 			)
 		)
-		(property "JLCPCB Part #" ""
+		(property "JLCPCB Part #" "C2718488"
 			(at 229.87 152.4 0)
 			(hide yes)
 			(show_name no)
@@ -22890,6 +22912,17 @@
 				)
 			)
 		)
+		(property "JLCPCB Part #" "C225519 "
+			(at 157.48 182.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "6"
 			(uuid "412f5325-b543-4d1a-a1c0-b538dc0ac3b1")
 		)
@@ -23799,7 +23832,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinSocket_2.00mm:PinSocket_1x02_P2.00mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical"
 			(at 256.54 76.2 90)
 			(hide yes)
 			(show_name no)
@@ -23833,7 +23866,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part #" ""
+		(property "JLCPCB Part #" "C49661"
 			(at 255.27 69.85 90)
 			(hide yes)
 			(show_name no)
@@ -26318,6 +26351,17 @@
 				)
 			)
 		)
+		(property "JLCPCB Part #" "C2759924"
+			(at 148.59 135.89 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "7"
 			(uuid "3ba436e2-f594-40eb-bf46-93707545e7f1")
 		)
@@ -27981,7 +28025,7 @@
 		(in_bom no)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "f5c17337-7a2a-4e0f-8ed9-c59408d990a4")
 		(property "Reference" "H1"
