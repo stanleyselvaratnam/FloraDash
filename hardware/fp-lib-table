@@ -1,4 +1,6 @@
 (fp_lib_table
 	(version 7)
 	(lib (name "2-18650") (type "KiCad") (uri "${KIPRJMOD}/footprints/Battery_18650/2-18650.pretty") (options "") (descr ""))
+	(lib (name "footprints") (type "KiCad") (uri "${KIPRJMOD}/footprints/SY8089AAAC_SGY/footprints.pretty") (options "") (descr ""))
+	(lib (name "SY8089BAAC") (type "KiCad") (uri "${KIPRJMOD}/footprints/SY8089BAAC_SGY/SY8089BAAC.pretty") (options "") (descr ""))
 )
