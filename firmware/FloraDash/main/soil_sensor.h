@@ -29,7 +29,7 @@
 
 // Points de calibration (en pF) mesures sur TON capteur.
 // La capacite monte avec l'humidite : sec = bas, humide = haut.
-#define SOIL_CP_DRY          8        // sol sec
+#define SOIL_CP_DRY          7        // sol sec
 #define SOIL_CP_WET          27       // sol bien humide
 
 // Ajoute le capteur sur un bus I2C existant (partage avec l'OLED)
@@ -45,5 +45,10 @@ esp_err_t soil_sensor_read_pf(uint8_t *cp_pf);
 // Convertit une capacite pF en pourcentage d'humidite (0..100)
 // selon les bornes SOIL_CP_DRY / SOIL_CP_WET.
 int soil_sensor_pf_to_percent(uint8_t cp_pf);
+
+// Configure la puce UNE SEULE FOIS avec le bloc EZ-Click, le
+// sauvegarde en flash (NVM), puis reset. A appeler manuellement
+// une fois, PAS a chaque boot.
+esp_err_t soil_sensor_apply_ezclick_config(void);
 
 #endif // SOIL_SENSOR_H

@@ -2,30 +2,45 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "soil_config_ezclick.h"
 
 static const char *TAG = "SOIL";
 
 // ════════════════════════════════════════════════════════
-// REGISTRES CY8CMBR3102 (lib SparkFun / TRM Infineon)
+// REGISTRES CY8CMBR3102 (TRM Infineon / lib SparkFun)
+// Ordonnes par adresse.
 // ════════════════════════════════════════════════════════
 #define REG_SENSOR_ID         0x82  // selection du capteur a debugguer
-#define REG_FAMILY_ID         0x8F  // 1 octet  -> 0x9A
+#define REG_CTRL_CMD          0x86  // registre de commande
+#define REG_CTRL_CMD_STATUS   0x88  // statut de la derniere commande
+#define REG_CTRL_CMD_ERR      0x89  // code d'erreur eventuel
+#define REG_FAMILY_ID         0x8F  // 1 octet     -> 0x9A
 #define REG_DEVICE_ID         0x90  // 2 octets LE -> 0x0A01
-#define REG_SYNC_COUNTER0     0xB9
-#define REG_SYNC_COUNTER1     0xDB
+#define REG_SYNC_COUNTER1     0xDB  // compteur sync bas  (encadre les debug)
 #define REG_DEBUG_SENSOR_ID   0xDC  // echo du SENSOR_ID applique
 #define REG_DEBUG_CP          0xDD  // capacite en pF (1 octet) <-- humidite
+#define REG_SYNC_COUNTER2     0xE7  // compteur sync haut (encadre les debug)
 
+// ── Commandes du registre REG_CTRL_CMD ─────────────────────
+#define CMD_SAVE_CHECK_CRC    0x02  // calcule + verifie CRC, sauve en NVM
+#define CMD_SW_RESET          0xFF  // reset logiciel
+
+// ── Identifiants de capteur (SENSOR_ID) ────────────────────
 #define SID_0                 0x00
 #define SID_1                 0x01
 
+// ── Parametres ─────────────────────────────────────────────
+#define CONFIG_BLOCK_LEN      128   // 0x00..0x7F
 #define SOIL_TIMEOUT_MS       100
 #define SOIL_SYNC_RETRIES     5     // relectures pour coherence sync
 #define SOIL_WAKE_RETRIES     10    // reessais reveil (NACK au boot)
+#define SOIL_ID_CONFIRM_TRIES 20    // confirmations de set_sensor_id
 
 static i2c_master_dev_handle_t s_dev = NULL;
 
-// ── E/S registre de base ───────────────────────────────────
+// ════════════════════════════════════════════════════════
+// E/S REGISTRE DE BASE
+// ════════════════════════════════════════════════════════
 static esp_err_t read_reg(uint8_t reg, uint8_t *buf, size_t len)
 {
     if (s_dev == NULL) return ESP_ERR_INVALID_STATE;
@@ -44,30 +59,40 @@ static esp_err_t write_u8(uint8_t reg, uint8_t val)
     return i2c_master_transmit(s_dev, payload, sizeof(payload), SOIL_TIMEOUT_MS);
 }
 
-// ── Lecture coherente d'un octet (entre SYNC0 et SYNC1) ────
-// La donnee de debug n'est valide que si SYNC0 == SYNC1, sinon
-// elle a change pendant la lecture. C'est la methode SparkFun.
+// ════════════════════════════════════════════════════════
+// LECTURE SYNCHRONISEE DES REGISTRES DE DEBUG
+// ════════════════════════════════════════════════════════
+// Les registres de debug (DEBUG_SENSOR_ID 0xDC, DEBUG_CP 0xDD)
+// sont encadres par SYNC_COUNTER1 (0xDB) et SYNC_COUNTER2 (0xE7).
+// Le TRM precise qu'ils ne sont valides que lorsque les deux
+// compteurs qui les encadrent sont egaux. Si un rafraichissement
+// tombe pendant la lecture, les compteurs different -> on retente.
 static esp_err_t read_synced_u8(uint8_t reg, uint8_t *val)
 {
     for (int i = 0; i < SOIL_SYNC_RETRIES; i++) {
-        uint8_t s0 = 0, s1 = 0, data = 0;
-        if (read_u8(REG_SYNC_COUNTER0, &s0)   != ESP_OK) return ESP_FAIL;
-        if (read_u8(reg, &data)               != ESP_OK) return ESP_FAIL;
-        if (read_u8(REG_SYNC_COUNTER1, &s1)   != ESP_OK) return ESP_FAIL;
-        if (s0 == s1) { *val = data; return ESP_OK; }
+        uint8_t s1 = 0, s2 = 0, data = 0;
+        if (read_u8(REG_SYNC_COUNTER1, &s1) != ESP_OK) return ESP_FAIL;
+        if (read_u8(reg, &data)             != ESP_OK) return ESP_FAIL;
+        if (read_u8(REG_SYNC_COUNTER2, &s2) != ESP_OK) return ESP_FAIL;
+        if (s1 == s2) {
+            *val = data;
+            return ESP_OK;
+        }
     }
     return ESP_ERR_INVALID_STATE;
 }
 
-// ── Selection d'un capteur, avec confirmation (methode SparkFun)
+// ════════════════════════════════════════════════════════
+// SELECTION D'UN CAPTEUR AVEC CONFIRMATION (methode SparkFun)
+// ════════════════════════════════════════════════════════
 // On ecrit SENSOR_ID puis on attend que DEBUG_SENSOR_ID (lu en
-// synchro) confirme la valeur. C'est ce qui garantit qu'on lira
-// le bon capteur, et ce qui evite l'alternance de valeurs.
+// synchro) confirme la valeur. C'est ce qui garantit la lecture
+// du bon capteur et evite l'alternance de valeurs.
 static esp_err_t set_sensor_id(uint8_t sid)
 {
     if (write_u8(REG_SENSOR_ID, sid) != ESP_OK) return ESP_FAIL;
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < SOIL_ID_CONFIRM_TRIES; i++) {
         uint8_t echo = 0xFF;
         if (read_synced_u8(REG_DEBUG_SENSOR_ID, &echo) == ESP_OK && echo == sid) {
             return ESP_OK;
@@ -77,6 +102,63 @@ static esp_err_t set_sensor_id(uint8_t sid)
     return ESP_ERR_TIMEOUT;
 }
 
+// ════════════════════════════════════════════════════════
+// CONFIGURATION UNIQUE DE LA PUCE (bloc EZ-Click)
+// ════════════════════════════════════════════════════════
+// Sequence TRM : ecrire les 128 octets de config, puis envoyer
+// SAVE_CHECK_CRC. La puce recalcule le CRC de son cote et ne
+// sauve en flash QUE s'il correspond aux 2 derniers octets.
+// Enfin, reset pour appliquer. A n'executer qu'UNE fois.
+esp_err_t soil_sensor_apply_ezclick_config(void)
+{
+    if (s_dev == NULL) return ESP_ERR_INVALID_STATE;
+
+    // 1. Ecrire la config registre par registre (offset = adresse
+    //    0x00..0x7F, valeur = octet correspondant).
+    ESP_LOGI(TAG, "Ecriture du bloc de config (128 octets)...");
+    for (uint8_t off = 0; off < CONFIG_BLOCK_LEN; off++) {
+        esp_err_t err = write_u8(off, SOIL_EZCLICK_CONFIG[off]);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Echec ecriture offset 0x%02X : %s",
+                     off, esp_err_to_name(err));
+            return err;
+        }
+    }
+
+    // 2. Commande SAVE_CHECK_CRC : la puce verifie le CRC et sauve.
+    ESP_LOGI(TAG, "Envoi SAVE_CHECK_CRC...");
+    esp_err_t err = write_u8(REG_CTRL_CMD, CMD_SAVE_CHECK_CRC);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Echec envoi commande : %s", esp_err_to_name(err));
+        return err;
+    }
+
+    // 3. Laisser le temps a l'ecriture flash (~220 ms typique).
+    vTaskDelay(pdMS_TO_TICKS(300));
+
+    // 4. Verifier le statut. 0 = succes ; sinon lire le code erreur.
+    uint8_t status = 0xFF, errcode = 0xFF;
+    if (read_u8(REG_CTRL_CMD_STATUS, &status) != ESP_OK) {
+        ESP_LOGW(TAG, "Statut illisible (la puce a peut-etre reset)");
+    }
+    if (status != 0x00) {
+        read_u8(REG_CTRL_CMD_ERR, &errcode);
+        ESP_LOGE(TAG, "CRC refuse ! status=0x%02X err=0x%02X", status, errcode);
+        return ESP_ERR_INVALID_CRC;
+    }
+    ESP_LOGI(TAG, "Config sauvegardee, CRC accepte.");
+
+    // 5. Reset logiciel pour appliquer la nouvelle config.
+    write_u8(REG_CTRL_CMD, CMD_SW_RESET);
+    vTaskDelay(pdMS_TO_TICKS(300));   // attendre le reboot
+
+    ESP_LOGI(TAG, "Puce reconfiguree et redemarree.");
+    return ESP_OK;
+}
+
+// ════════════════════════════════════════════════════════
+// API PUBLIQUE
+// ════════════════════════════════════════════════════════
 esp_err_t soil_sensor_begin(i2c_master_bus_handle_t bus)
 {
     if (bus == NULL) return ESP_ERR_INVALID_ARG;
@@ -133,10 +215,10 @@ esp_err_t soil_sensor_read_pf(uint8_t *cp_pf)
 {
     if (cp_pf == NULL) return ESP_ERR_INVALID_ARG;
 
-    // Sequence SparkFun exacte (readCapacitancePF) :
-    // DEBUG_CP ne se met a jour que quand SENSOR_ID change. On
-    // bascule donc sur l'autre capteur, puis on revient sur SID_0
-    // AVEC confirmation via DEBUG_SENSOR_ID, avant de lire.
+    // Sequence SparkFun exacte (readCapacitancePF) : DEBUG_CP ne se
+    // met a jour que quand SENSOR_ID change. On bascule donc sur
+    // l'autre capteur, puis on revient sur SID_0 AVEC confirmation
+    // via DEBUG_SENSOR_ID, avant de lire.
     if (set_sensor_id(SID_1) != ESP_OK) return ESP_FAIL;
     if (set_sensor_id(SID_0) != ESP_OK) return ESP_FAIL;
 
