@@ -7,6 +7,7 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include <limits.h>
 
 // Drivers ADC nouveaux (ESP-IDF v5+)
 #include "esp_adc/adc_oneshot.h"
@@ -30,8 +31,17 @@ static const char *TAG = "FLORADASH";
 #define DHT_GPIO          GPIO_NUM_3
 
 #define NB_SAMPLES        16        // Multi-echantillonnage ADC
-#define REFRESH_PERIOD_MS 100       // Rafraichissement de la boucle / affichage
-#define DHT_PERIOD_US     1500000   // Cadence DHT11 : datasheet = periode >= 1 s
+
+// Cadences des timers (en microsecondes)
+#define ADC_PERIOD_US     250000    // 250 ms (4Hz)
+#define SOIL_PERIOD_US    100000    // 100 ms (10Hz)
+#define DHT_PERIOD_US     1500000   // 1.5 s : datasheet DHT11 = periode >= 1 s
+
+// Bits de notification : un par capteur. La boucle se reveille quand un
+// timer signale, et lit les bits pour savoir quelle(s) tache(s) executer.
+#define NOTIFY_ADC        (1 << 0)
+#define NOTIFY_SOIL       (1 << 1)
+#define NOTIFY_DHT        (1 << 2)
 
 // Adresses I2C des peripheriques (7 bits) — reference de cablage
 #define I2C_ADDR_OLED       0x3C    // Ecran SSD1306
@@ -60,11 +70,13 @@ typedef struct {
     bool                      cali_ok;
     bool                      soil_ok;
 
-    // Etat DHT11 (lecture cadencee non bloquante)
+    // Etat DHT11 : derniere lecture valide affichee a chaque rafraichissement
     dht11_reading_t dht;
     bool            dht_valid;
-    int64_t         last_dht_us;
 } floradash_t;
+
+// Tache principale a reveiller depuis les callbacks timer.
+static TaskHandle_t s_main_task;
 
 // ════════════════════════════════════════════════════════
 // PROTOTYPES
@@ -74,6 +86,7 @@ static void oled_init(floradash_t *fd);
 static void oled_rotate_180(SSD1306_t *dev);
 static void soil_init(floradash_t *fd);
 static void adc_init(floradash_t *fd);
+static void timers_init(void);
 static void print_banner(const floradash_t *fd);
 
 static void task_read_adc(floradash_t *fd, char *buf, size_t buflen);
@@ -81,11 +94,20 @@ static void task_read_soil(floradash_t *fd, char *buf, size_t buflen);
 static void task_read_dht(floradash_t *fd, char *buf, size_t buflen);
 
 // ════════════════════════════════════════════════════════
+// CALLBACKS TIMER — signalent uniquement, aucun travail
+// Contexte = tache esp_timer (dispatch par defaut, pas ISR),
+// donc xTaskNotify simple suffit (pas de variante FromISR).
+// ════════════════════════════════════════════════════════
+static void cb_adc(void *arg)  { xTaskNotify(s_main_task, NOTIFY_ADC,  eSetBits); }
+static void cb_soil(void *arg) { xTaskNotify(s_main_task, NOTIFY_SOIL, eSetBits); }
+static void cb_dht(void *arg)  { xTaskNotify(s_main_task, NOTIFY_DHT,  eSetBits); }
+
+// ════════════════════════════════════════════════════════
 // POINT D'ENTREE — se lit comme un sommaire
 // ════════════════════════════════════════════════════════
 void app_main(void)
 {
-    static floradash_t fd = { .last_dht_us = -DHT_PERIOD_US };
+    static floradash_t fd = {0};
     char line_buf[32];
 
     ESP_LOGI(TAG, "=== Demarrage FloraDash ===");
@@ -100,11 +122,19 @@ void app_main(void)
 
     print_banner(&fd);
 
+    // On memorise la tache courante : les timers la reveilleront.
+    s_main_task = xTaskGetCurrentTaskHandle();
+    timers_init();
+
     while (1) {
-        task_read_adc(&fd,  line_buf, sizeof(line_buf));
-        task_read_soil(&fd, line_buf, sizeof(line_buf));
-        task_read_dht(&fd,  line_buf, sizeof(line_buf));
-        vTaskDelay(pdMS_TO_TICKS(REFRESH_PERIOD_MS));
+        uint32_t bits;
+        // Dort sans consommer de CPU jusqu'a ce qu'un timer signale.
+        // Le 0 : n'efface rien en entrant. ULONG_MAX : efface tout en sortant.
+        xTaskNotifyWait(0, ULONG_MAX, &bits, portMAX_DELAY);
+
+        if (bits & NOTIFY_ADC)  task_read_adc(&fd,  line_buf, sizeof(line_buf));
+        if (bits & NOTIFY_SOIL) task_read_soil(&fd, line_buf, sizeof(line_buf));
+        if (bits & NOTIFY_DHT)  task_read_dht(&fd,  line_buf, sizeof(line_buf));
     }
 }
 
@@ -200,6 +230,28 @@ static void adc_init(floradash_t *fd)
     }
 }
 
+// Cree un timer periodique unique a partir d'un callback et d'une cadence.
+// ESP_ERROR_CHECK acceptable ici : un echec au boot = bug de config.
+static void start_timer(esp_timer_cb_t cb, const char *name, uint64_t period_us)
+{
+    const esp_timer_create_args_t args = {
+        .callback = cb,
+        .name     = name,
+        .dispatch_method = ESP_TIMER_TASK,   // defaut : execute dans une tache
+    };
+    esp_timer_handle_t h;
+    ESP_ERROR_CHECK(esp_timer_create(&args, &h));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(h, period_us));
+}
+
+static void timers_init(void)
+{
+    start_timer(cb_adc,  "adc",  ADC_PERIOD_US);
+    start_timer(cb_soil, "soil", SOIL_PERIOD_US);
+    start_timer(cb_dht,  "dht",  DHT_PERIOD_US);
+    ESP_LOGI(TAG, "Timers demarres (adc/soil/dht)");
+}
+
 static void print_banner(const floradash_t *fd)
 {
     esp_chip_info_t chip_info;
@@ -275,20 +327,18 @@ static void task_read_soil(floradash_t *fd, char *buf, size_t buflen)
     ESP_LOGI(TAG, "Soil Cp = %u pF  ->  %d %%", soil_pf, hum);
 }
 
-// Lecture DHT11 cadencee (>= 1 s, datasheet) ; affiche la derniere valeur valide
-// a chaque tour, independamment de la cadence de lecture.
+// Lecture DHT11 : la cadence (>= 1 s) est portee par le timer dedie,
+// plus besoin de comparer les timestamps ici.
+// NOTE : dht11_read() bloque ~5 ms (section critique bit-bang). Ce blocage
+// retarde les autres reveils tant que le driver n'est pas porte sur RMT.
 static void task_read_dht(floradash_t *fd, char *buf, size_t buflen)
 {
-    int64_t now = esp_timer_get_time();
-    if (now - fd->last_dht_us >= DHT_PERIOD_US) {
-        fd->last_dht_us = now;
-        if (dht11_read(&fd->dht) == ESP_OK) {
-            fd->dht_valid = true;
-            ESP_LOGI("DHT11", "T=%.0f C  RH=%.0f %%",
-                     fd->dht.temperature, fd->dht.humidity);
-        } else {
-            ESP_LOGW("DHT11", "Lecture DHT11 echouee");
-        }
+    if (dht11_read(&fd->dht) == ESP_OK) {
+        fd->dht_valid = true;
+        ESP_LOGI("DHT11", "T=%.0f C  RH=%.0f %%",
+                 fd->dht.temperature, fd->dht.humidity);
+    } else {
+        ESP_LOGW("DHT11", "Lecture DHT11 echouee");
     }
 
     if (fd->dht_valid) {
