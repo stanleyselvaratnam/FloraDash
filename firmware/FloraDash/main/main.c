@@ -70,9 +70,20 @@ typedef struct {
     bool                      cali_ok;
     bool                      soil_ok;
 
-    // Etat DHT11 : derniere lecture valide affichee a chaque rafraichissement
-    dht11_reading_t dht;
+    // Valeurs vivantes : les taches capteurs les ecrivent, oled_update les lit.
+    int             voltage_mv;   // tension ADC
+    uint8_t         soil_pf;      // capacite sol (pF)
+    int             soil_hum;     // humidite sol (%)
+    dht11_reading_t dht;          // temperature / humidite air
     bool            dht_valid;
+
+    // Cache anti-redraw : derniere valeur reellement affichee a l'ecran.
+    // -1 / 0xFF = "jamais affiche", force le premier rendu.
+    int     shown_voltage_mv;
+    uint8_t shown_soil_pf;
+    int     shown_soil_hum;
+    int     shown_dht_t;
+    int     shown_dht_h;
 } floradash_t;
 
 // Tache principale a reveiller depuis les callbacks timer.
@@ -89,9 +100,10 @@ static void adc_init(floradash_t *fd);
 static void timers_init(void);
 static void print_banner(const floradash_t *fd);
 
-static void task_read_adc(floradash_t *fd, char *buf, size_t buflen);
-static void task_read_soil(floradash_t *fd, char *buf, size_t buflen);
-static void task_read_dht(floradash_t *fd, char *buf, size_t buflen);
+static void task_read_adc(floradash_t *fd);
+static void task_read_soil(floradash_t *fd);
+static void task_read_dht(floradash_t *fd);
+static void oled_update(floradash_t *fd);
 
 // ════════════════════════════════════════════════════════
 // CALLBACKS TIMER — signalent uniquement, aucun travail
@@ -107,8 +119,14 @@ static void cb_dht(void *arg)  { xTaskNotify(s_main_task, NOTIFY_DHT,  eSetBits)
 // ════════════════════════════════════════════════════════
 void app_main(void)
 {
-    static floradash_t fd = {0};
-    char line_buf[32];
+    // Cache initialise a des valeurs "impossibles" pour forcer le 1er rendu.
+    static floradash_t fd = {
+        .shown_voltage_mv = -1,
+        .shown_soil_pf    = 0xFF,
+        .shown_soil_hum   = -1,
+        .shown_dht_t      = -1000,
+        .shown_dht_h      = -1000,
+    };
 
     ESP_LOGI(TAG, "=== Demarrage FloraDash ===");
 
@@ -132,9 +150,12 @@ void app_main(void)
         // Le 0 : n'efface rien en entrant. ULONG_MAX : efface tout en sortant.
         xTaskNotifyWait(0, ULONG_MAX, &bits, portMAX_DELAY);
 
-        if (bits & NOTIFY_ADC)  task_read_adc(&fd,  line_buf, sizeof(line_buf));
-        if (bits & NOTIFY_SOIL) task_read_soil(&fd, line_buf, sizeof(line_buf));
-        if (bits & NOTIFY_DHT)  task_read_dht(&fd,  line_buf, sizeof(line_buf));
+        if (bits & NOTIFY_ADC)  task_read_adc(&fd);
+        if (bits & NOTIFY_SOIL) task_read_soil(&fd);
+        if (bits & NOTIFY_DHT)  task_read_dht(&fd);
+
+        // Un seul point d'affichage : ne reecrit que ce qui a change.
+        oled_update(&fd);
     }
 }
 
@@ -266,11 +287,12 @@ static void print_banner(const floradash_t *fd)
 }
 
 // ════════════════════════════════════════════════════════
-// TACHES DE LA BOUCLE (un bloc = une fonction)
+// TACHES DE LECTURE — lisent et stockent dans le contexte.
+// Aucune ne touche a l'OLED : l'affichage est centralise.
 // ════════════════════════════════════════════════════════
 
-// Lecture ADC moyennee (potentiometre de test) + affichage tension.
-static void task_read_adc(floradash_t *fd, char *buf, size_t buflen)
+// Lecture ADC moyennee (potentiometre de test) -> tension stockee.
+static void task_read_adc(floradash_t *fd)
 {
     int raw_sum = 0;
     for (int i = 0; i < NB_SAMPLES; i++) {
@@ -281,20 +303,15 @@ static void task_read_adc(floradash_t *fd, char *buf, size_t buflen)
     }
     int raw_avg = raw_sum / NB_SAMPLES;
 
-    int voltage_mv;
     if (fd->cali_ok) {
-        adc_cali_raw_to_voltage(fd->cali, raw_avg, &voltage_mv);
+        adc_cali_raw_to_voltage(fd->cali, raw_avg, &fd->voltage_mv);
     } else {
-        voltage_mv = (raw_avg * 3300) / 4095;
+        fd->voltage_mv = (raw_avg * 3300) / 4095;
     }
-
-    snprintf(buf, buflen, "Volt: %d.%02d V",
-             voltage_mv / 1000, (voltage_mv % 1000) / 10);
-    ssd1306_display_text(&fd->oled, OLED_LINE_VOLT, buf, strlen(buf), false);
 }
 
-// Lecture capteur de sol (capacite pF) -> conversion en % + barre de progression.
-static void task_read_soil(floradash_t *fd, char *buf, size_t buflen)
+// Lecture capteur de sol (pF) -> capacite + humidite stockees.
+static void task_read_soil(floradash_t *fd)
 {
     if (!fd->soil_ok) {
         return;
@@ -307,31 +324,14 @@ static void task_read_soil(floradash_t *fd, char *buf, size_t buflen)
         return;
     }
 
-    int hum = soil_sensor_pf_to_percent(soil_pf);
+    fd->soil_pf  = soil_pf;
+    fd->soil_hum = soil_sensor_pf_to_percent(soil_pf);
 
-    snprintf(buf, buflen, "Soil: %3u pF", soil_pf);
-    ssd1306_display_text(&fd->oled, OLED_LINE_SOIL, buf, strlen(buf), false);
-
-    snprintf(buf, buflen, "Humid: %3d %%", hum);
-    ssd1306_display_text(&fd->oled, OLED_LINE_HUMID, buf, strlen(buf), false);
-
-    // Barre de progression (16 caracteres)
-    char bar[17];
-    int filled = (hum * 16) / 100;
-    for (int i = 0; i < 16; i++) {
-        bar[i] = (i < filled) ? '#' : '.';
-    }
-    bar[16] = '\0';
-    ssd1306_display_text(&fd->oled, OLED_LINE_BAR, bar, 16, true);
-
-    ESP_LOGI(TAG, "Soil Cp = %u pF  ->  %d %%", soil_pf, hum);
+    ESP_LOGI(TAG, "Soil Cp = %u pF  ->  %d %%", fd->soil_pf, fd->soil_hum);
 }
 
-// Lecture DHT11 : la cadence (>= 1 s) est portee par le timer dedie,
-// plus besoin de comparer les timestamps ici.
-// NOTE : dht11_read() bloque ~5 ms (section critique bit-bang). Ce blocage
-// retarde les autres reveils tant que le driver n'est pas porte sur RMT.
-static void task_read_dht(floradash_t *fd, char *buf, size_t buflen)
+// Lecture DHT11 -> temperature / humidite air stockees.
+static void task_read_dht(floradash_t *fd)
 {
     if (dht11_read(&fd->dht) == ESP_OK) {
         fd->dht_valid = true;
@@ -340,10 +340,55 @@ static void task_read_dht(floradash_t *fd, char *buf, size_t buflen)
     } else {
         ESP_LOGW("DHT11", "Lecture DHT11 echouee");
     }
+}
 
+// ════════════════════════════════════════════════════════
+// AFFICHAGE OLED CENTRALISE (cache anti-redraw)
+// Compare chaque valeur a la derniere reellement affichee et ne
+// reecrit la ligne que si elle a change. Evite ~17 ms de bus I2C
+// par tour quand les valeurs sont stables.
+// ════════════════════════════════════════════════════════
+static void oled_update(floradash_t *fd)
+{
+    char buf[32];
+
+    // --- Tension ---
+    if (fd->voltage_mv != fd->shown_voltage_mv) {
+        snprintf(buf, sizeof(buf), "Volt: %d.%02d V",
+                 fd->voltage_mv / 1000, (fd->voltage_mv % 1000) / 10);
+        ssd1306_display_text(&fd->oled, OLED_LINE_VOLT, buf, strlen(buf), false);
+        fd->shown_voltage_mv = fd->voltage_mv;
+    }
+
+    // --- Sol : capacite + humidite + barre (groupes car lies) ---
+    if (fd->soil_pf != fd->shown_soil_pf || fd->soil_hum != fd->shown_soil_hum) {
+        snprintf(buf, sizeof(buf), "Soil: %3u pF", fd->soil_pf);
+        ssd1306_display_text(&fd->oled, OLED_LINE_SOIL, buf, strlen(buf), false);
+
+        snprintf(buf, sizeof(buf), "Humid: %3d %%", fd->soil_hum);
+        ssd1306_display_text(&fd->oled, OLED_LINE_HUMID, buf, strlen(buf), false);
+
+        char bar[17];
+        int filled = (fd->soil_hum * 16) / 100;
+        for (int i = 0; i < 16; i++) {
+            bar[i] = (i < filled) ? '#' : '.';
+        }
+        bar[16] = '\0';
+        ssd1306_display_text(&fd->oled, OLED_LINE_BAR, bar, 16, true);
+
+        fd->shown_soil_pf  = fd->soil_pf;
+        fd->shown_soil_hum = fd->soil_hum;
+    }
+
+    // --- DHT11 : T / RH (arrondis a l'entier, comme affiches) ---
     if (fd->dht_valid) {
-        snprintf(buf, buflen, "T:%2.0fC  H:%2.0f%%",
-                 fd->dht.temperature, fd->dht.humidity);
-        ssd1306_display_text(&fd->oled, OLED_LINE_DHT, buf, strlen(buf), false);
+        int t = (int)fd->dht.temperature;
+        int h = (int)fd->dht.humidity;
+        if (t != fd->shown_dht_t || h != fd->shown_dht_h) {
+            snprintf(buf, sizeof(buf), "T:%2dC  H:%2d%%", t, h);
+            ssd1306_display_text(&fd->oled, OLED_LINE_DHT, buf, strlen(buf), false);
+            fd->shown_dht_t = t;
+            fd->shown_dht_h = h;
+        }
     }
 }
