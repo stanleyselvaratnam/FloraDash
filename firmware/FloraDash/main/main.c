@@ -34,7 +34,7 @@ static const char *TAG = "FLORADASH";
 
 // Cadences des timers (en microsecondes)
 #define ADC_PERIOD_US     250000    // 250 ms (4Hz)
-#define SOIL_PERIOD_US    100000    // 100 ms (10Hz)
+#define SOIL_PERIOD_US    2000000    // 100 ms (10Hz)
 #define DHT_PERIOD_US     1500000   // 1.5 s : datasheet DHT11 = periode >= 1 s
 
 // Bits de notification : un par capteur. La boucle se reveille quand un
