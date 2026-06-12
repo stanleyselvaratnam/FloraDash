@@ -211,14 +211,30 @@ esp_err_t soil_sensor_check_id(uint16_t *id_out)
     return ESP_OK;
 }
 
+// Reveille la puce avant la lecture : relit DEVICE_ID avec retry sur NACK.
+// Necessaire car la puce se rendort entre deux lectures espacees.
+static esp_err_t soil_wake(void)
+{
+    uint8_t raw[2] = {0};
+    for (int i = 0; i < SOIL_WAKE_RETRIES; i++) {
+        if (read_reg(REG_DEVICE_ID, raw, sizeof(raw)) == ESP_OK) {
+            return ESP_OK;
+        }
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
+    return ESP_ERR_TIMEOUT;
+}
+
 esp_err_t soil_sensor_read_pf(uint8_t *cp_pf)
 {
     if (cp_pf == NULL) return ESP_ERR_INVALID_ARG;
 
-    // Sequence SparkFun exacte (readCapacitancePF) : DEBUG_CP ne se
-    // met a jour que quand SENSOR_ID change. On bascule donc sur
-    // l'autre capteur, puis on revient sur SID_0 AVEC confirmation
-    // via DEBUG_SENSOR_ID, avant de lire.
+    // Etape 0 : reveiller la puce si elle s'est rendormie.
+    if (soil_wake() != ESP_OK) {
+        ESP_LOGW(TAG, "Reveil capteur echoue");
+        return ESP_FAIL;
+    }
+
     if (set_sensor_id(SID_1) != ESP_OK) return ESP_FAIL;
     if (set_sensor_id(SID_0) != ESP_OK) return ESP_FAIL;
 
